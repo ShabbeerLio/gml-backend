@@ -18,6 +18,10 @@ const NotesSchema = new Schema({
         type: String,
         default: "General"
     },
+    imageUrl: {
+        type: String,
+        required: false
+    },
     date: {
         type: Date,
         default: Date.now

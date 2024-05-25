@@ -1,19 +1,18 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const UserSchema = new Schema({
-    name: {
+const ServiceSchema = new Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user'
+    },
+    title: {
         type: String,
         required: true
     },
-    email: {
+    description: {
         type: String,
         required: true,
-        unique: true
-    },
-    password: {
-        type: String,
-        required: true
     },
     imageUrl: {
         type: String,
@@ -24,5 +23,5 @@ const UserSchema = new Schema({
         default: Date.now
     },
 });
-const User = mongoose.model('user',UserSchema);
-module.exports = User;
+
+module.exports = mongoose.model('service', ServiceSchema)
