@@ -1,31 +1,29 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
 
-const ClientsSchema = new Schema({
-    user:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'user'
+const SubcategorySchema = new mongoose.Schema({
+    name: {
+        type: String,
+        // required: true
     },
-    title: {
+    description: {
+        type: String
+    }
+});
+
+const ClientSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    category: {
         type: String,
         required: true
     },
-    description: {
-        type: String,
-        required: true,
-    },
-    tag: {
-        type: String,
-        default: "General"
-    },
-    imageUrl: {
-        type: String,
-        required: false
-    },
+    subcategories: [SubcategorySchema],
     date: {
         type: Date,
         default: Date.now
-    },
+    }
 });
 
-module.exports = mongoose.model('clients',ClientsSchema)
+module.exports = mongoose.model('Client', ClientSchema);

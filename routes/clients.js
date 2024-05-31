@@ -1,95 +1,162 @@
 const express = require('express');
-const router = express.Router()
-const Note = require('../models/Clients')
+const router = express.Router();
+const Client = require('../models/Clients');
 var fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
 
-// route1 : get all clients using GET: "/api/clients/fetchallclients" login required
+// route1 : Get all clients using GET: "/api/clients/fetchallclients" login required
 router.get('/fetchallclients', fetchuser, async (req, res) => {
     try {
-        const clients = await Note.find({ user: req.user.id });
-        res.json(clients)
+        const clients = await Client.find({ user: req.user.id });
+        res.json(clients);
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
-})
+});
 
-// route2 : Add New clients using POST: "/api/clients/addclients" login required
+// route2 : Add new client using POST: "/api/clients/addclients" login required
 router.post('/addclients', fetchuser, [
-    body('title', 'Enter a valid title').isLength({ min: 3 }),
-    body('description', 'Enter a valid description').isLength({ min: 3 }),
+    body('category', 'Enter a valid category').isLength({ min: 3 }),
 ], async (req, res) => {
     try {
-
-        const { title, description, tag } = req.body;
+        const { category, subcategories } = req.body;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const note = new Note({
-            title, description, tag, user: req.user.id
-        })
-        const saveNote = await note.save()
+        const client = new Client({
+            category,
+            subcategories,
+            user: req.user.id
+        });
+        const saveClient = await client.save();
 
-        res.json(saveNote)
+        res.json(saveClient);
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
-})
+});
 
-// route3 : Update clients using PUT: "/api/clients/updateclients/:id" login required
-
+// route3 : Update client using PUT: "/api/clients/updateclients/:id" login required
 router.put('/updateclients/:id', fetchuser, async (req, res) => {
-    const { title, description} = req.body;
+    const { category, subcategories } = req.body;
     try {
-        // Create a newclients object
-        const newClients = {};
-        if (title) { newClients.title = title };
-        if (description) { newClients.description = description };
+        // Create a newClient object
+        const newClient = {};
+        if (category) { newClient.category = category; }
+        if (subcategories) { newClient.subcategories = subcategories; }
 
-        // find the note to be updated and update it
-        let note = await Note.findById(req.params.id);
-        if (!note) {
-            return res.status(404).send("Not Found")
+        // Find the client to be updated and update it
+        let client = await Client.findById(req.params.id);
+        if (!client) {
+            return res.status(404).send("Not Found");
         }
-        if (note.user.toString() !== req.user.id) {
+        if (client.user.toString() !== req.user.id) {
             return res.status(404).send("Not Allowed");
         }
 
-        note = await Note.findByIdAndUpdate(req.params.id, { $set: newClients }, { new: true })
-        res.json({ note });
+        client = await Client.findByIdAndUpdate(req.params.id, { $set: newClient }, { new: true });
+        res.json({ client });
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
+});
 
-})
-
-// route4 : Update clients using Detele: "/api/clients/deleteclients/:id" login required
+// route4 : Delete client using DELETE: "/api/clients/deleteclients/:id" login required
 router.delete('/deleteclients/:id', fetchuser, async (req, res) => {
     try {
-        // find the note to be deleted and delete it
-        let note = await Note.findById(req.params.id);
-        if (!note) {
-            return res.status(404).send("Not Found")
+        // Find the client to be deleted and delete it
+        let client = await Client.findById(req.params.id);
+        if (!client) {
+            return res.status(404).send("Not Found");
         }
 
-        // allows deletion  only if user owns this note
-        if (note.user.toString() !== req.user.id) {
+        // Allow deletion only if user owns this client
+        if (client.user.toString() !== req.user.id) {
             return res.status(404).send("Not Allowed");
         }
 
-        note = await Note.findByIdAndDelete(req.params.id)
-        res.json({ "Succes": "Note has been deleted", note: note });
+        client = await Client.findByIdAndDelete(req.params.id);
+        res.json({ "Success": "Client has been deleted", client: client });
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
+});
 
-})
+// Add Subcategory ROUTE: /api/clients/:id/subcategories
+
+router.post('/:clientId/subcategories', async (req, res) => {
+    try {
+        const client = await Client.findById(req.params.clientId);
+        if (!client) {
+            return res.status(404).json({ error: "Client not found" });
+        }
+
+        const { name, description } = req.body;
+        client.subcategories.push({ name, description });
+        await client.save();
+
+        res.status(201).json({ message: "Subcategory added successfully" });
+    } catch (error) {
+        console.error("Error adding subcategory:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
 
 
-module.exports = router
+// Edit Subcategory ROUTE: /api/clients/:clientId/subcategories/:subcategoryId
+router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
+    try {
+        const client = await Client.findById(req.params.clientId);
+        if (!client) {
+            return res.status(404).json({ error: "Client not found" });
+        }
+
+        const { name, description } = req.body;
+        const subcategory = client.subcategories.find(sub => sub._id.toString() === req.params.subcategoryId);
+        if (subcategory) {
+            subcategory.name = name;
+            subcategory.description = description;
+            await client.save();
+            res.json({ message: "Subcategory updated successfully" });
+        } else {
+            res.status(404).json({ error: "Subcategory not found" });
+        }
+    } catch (error) {
+        console.error("Error updating subcategory:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+
+
+// Delete Subcategory ROUTE: /api/clients/:id/subcategories
+router.delete('/:clientId/subcategories/:subcategoryId', async (req, res) => {
+    try {
+        const client = await Client.findById(req.params.clientId);
+        if (!client) {
+            return res.status(404).json({ error: "Client not found" });
+        }
+
+        const subcategoryIndex = client.subcategories.find(sub => sub._id.toString() === req.params.subcategoryId);
+        if (subcategoryIndex !== -1) {
+            client.subcategories.splice(subcategoryIndex, 1);
+            await client.save();
+            res.json({ message: "Subcategory deleted successfully" });
+        } else {
+            res.status(404).json({ error: "Subcategory not found" });
+        }
+    } catch (error) {
+        console.error("Error deleting subcategory:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+
+
+module.exports = router;
