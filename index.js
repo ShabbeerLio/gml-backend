@@ -6,7 +6,7 @@ const path = require('path');
 
 connectToMongo();
 const app = express()
-const port = 8000
+const port = process.env.PORT || 8000;
 
 app.use(cors())
 app.use(express.json())
@@ -68,5 +68,5 @@ app.use('/api/service', require('./routes/service'))
 app.use('/api/clients', require('./routes/clients'))
 
 app.listen(port, () => {
-    console.log(`S-Book backend listening on port http://localhost:${port}`)
+    console.log(`gmls backend listening on port http://localhost:${port}`)
 })
