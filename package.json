@@ -1,11 +1,10 @@
 {
-  "name": "sbook-backend",
+  "name": "gmls-backend",
   "version": "1.0.0",
   "description": "bakend of the gmls",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "netlify deploy --prod"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
