@@ -17,5 +17,5 @@ app.use('/api/service', require('./routes/service'))
 app.use('/api/clients', require('./routes/clients'))
 
 app.listen(PORT, () => {
-    console.log(`S-Book backend listening on port ${PORT}`)
+    console.log(`Gmls backend listening on port ${PORT}`)
 })
