@@ -139,15 +139,17 @@ router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
 router.delete('/:clientId/subcategories/:subcategoryId', async (req, res) => {
     try {
         const client = await Client.findById(req.params.clientId);
+        // console.log(client, "client");
         if (!client) {
             return res.status(404).json({ error: "Client not found" });
         }
 
-        const subcategoryIndex = client.subcategories.find(sub => sub._id.toString() === req.params.subcategoryId);
+        const subcategoryIndex = client.subcategories.findIndex(sub => sub._id.toString() === req.params.subcategoryId);
+        console.log(subcategoryIndex, "subcategory index");
         if (subcategoryIndex !== -1) {
             client.subcategories.splice(subcategoryIndex, 1);
             await client.save();
-            res.json({ message: "Subcategory deleted successfully" });
+            res.json({ Success: "Subcategory deleted successfully" });
         } else {
             res.status(404).json({ error: "Subcategory not found" });
         }
@@ -156,6 +158,7 @@ router.delete('/:clientId/subcategories/:subcategoryId', async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 
 
