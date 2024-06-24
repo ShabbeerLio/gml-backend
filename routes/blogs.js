@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const Client = require('../models/Clients');
+const Client = require('../models/Blogs');
 var fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
 
-// route1 : Get all clients using GET: "/api/clients/fetchallclients" login required
-router.get('/fetchallclients', fetchuser, async (req, res) => {
+// route1 : Get all clients using GET: "/api/blog/fetchallblog" login required
+router.get('/fetchallblog', fetchuser, async (req, res) => {
     try {
         const clients = await Client.find({ user: req.user.id });
         res.json(clients);
@@ -15,8 +15,8 @@ router.get('/fetchallclients', fetchuser, async (req, res) => {
     }
 });
 
-// route2 : Add new client using POST: "/api/clients/addclients" login required
-router.post('/addclients', fetchuser, [
+// route2 : Add new client using POST: "/api/blog/addblog" login required
+router.post('/addblog', fetchuser, [
     body('category', 'Enter a valid category').isLength({ min: 3 }),
 ], async (req, res) => {
     try {
@@ -40,8 +40,8 @@ router.post('/addclients', fetchuser, [
     }
 });
 
-// route3 : Update client using PUT: "/api/clients/updateclients/:id" login required
-router.put('/updateclients/:id', fetchuser, async (req, res) => {
+// route3 : Update client using PUT: "/api/blog/updateblog/:id" login required
+router.put('/updateblog/:id', fetchuser, async (req, res) => {
     const { category, subcategories } = req.body;
     try {
         // Create a newClient object
@@ -66,8 +66,8 @@ router.put('/updateclients/:id', fetchuser, async (req, res) => {
     }
 });
 
-// route4 : Delete client using DELETE: "/api/clients/deleteclients/:id" login required
-router.delete('/deleteclients/:id', fetchuser, async (req, res) => {
+// route4 : Delete client using DELETE: "/api/blog/deleteblog/:id" login required
+router.delete('/deleteblog/:id', fetchuser, async (req, res) => {
     try {
         // Find the client to be deleted and delete it
         let client = await Client.findById(req.params.id);
@@ -81,40 +81,40 @@ router.delete('/deleteclients/:id', fetchuser, async (req, res) => {
         }
 
         client = await Client.findByIdAndDelete(req.params.id);
-        res.json({ "Success": "Client has been deleted", client: client });
+        res.json({ "Success": "Blog has been deleted", client: client });
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Internal Server Error");
     }
 });
 
-// Add Subcategory ROUTE: /api/clients/:id/subcategories
+// Add Subcategory ROUTE: /api/blog/:id/subcategories
 
 router.post('/:clientId/subcategories', async (req, res) => {
     try {
         const client = await Client.findById(req.params.clientId);
         if (!client) {
-            return res.status(404).json({ error: "Client not found" });
+            return res.status(404).json({ error: "Blog not found" });
         }
 
         const { name, description } = req.body;
         client.subcategories.push({ name, description });
         await client.save();
 
-        res.status(201).json({ message: "Subcategory added successfully" });
+        res.status(201).json({ message: "Blog detail added successfully" });
     } catch (error) {
-        console.error("Error adding subcategory:", error);
+        console.error("Error adding Blog detail:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
 
-// Edit Subcategory ROUTE: /api/clients/:clientId/subcategories/:subcategoryId
+// Edit Subcategory ROUTE: /api/blog/:clientId/subcategories/:subcategoryId
 router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
     try {
         const client = await Client.findById(req.params.clientId);
         if (!client) {
-            return res.status(404).json({ error: "Client not found" });
+            return res.status(404).json({ error: "Blog not found" });
         }
 
         const { name, description } = req.body;
@@ -123,25 +123,25 @@ router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
             subcategory.name = name;
             subcategory.description = description;
             await client.save();
-            res.json({ message: "Subcategory updated successfully" });
+            res.json({ message: "Blog detail updated successfully" });
         } else {
-            res.status(404).json({ error: "Subcategory not found" });
+            res.status(404).json({ error: "Blog detail not found" });
         }
     } catch (error) {
-        console.error("Error updating subcategory:", error);
+        console.error("Error updating Blog detail:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
 
 
-// Delete Subcategory ROUTE: /api/clients/:id/subcategories
+// Delete Subcategory ROUTE:/api/blog/:id/subcategories
 router.delete('/:clientId/subcategories/:subcategoryId', async (req, res) => {
     try {
         const client = await Client.findById(req.params.clientId);
         // console.log(client, "client");
         if (!client) {
-            return res.status(404).json({ error: "Client not found" });
+            return res.status(404).json({ error: "Blog not found" });
         }
 
         const subcategoryIndex = client.subcategories.findIndex(sub => sub._id.toString() === req.params.subcategoryId);
@@ -149,12 +149,12 @@ router.delete('/:clientId/subcategories/:subcategoryId', async (req, res) => {
         if (subcategoryIndex !== -1) {
             client.subcategories.splice(subcategoryIndex, 1);
             await client.save();
-            res.json({ Success: "Subcategory deleted successfully" });
+            res.json({ Success: "Blog detail deleted successfully" });
         } else {
-            res.status(404).json({ error: "Subcategory not found" });
+            res.status(404).json({ error: "Blog detail not found" });
         }
     } catch (error) {
-        console.error("Error deleting subcategory:", error);
+        console.error("Error deleting Blog detail:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
