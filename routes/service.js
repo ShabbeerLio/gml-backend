@@ -5,20 +5,27 @@ const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// Set up multer for image upload
+// Ensure the uploads directory exists
+
+const uploadDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+        cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname)); // Appends the original file extension
+        cb(null, Date.now() + '-' + file.originalname);
     }
 });
 
 const upload = multer({ storage: storage });
 
-// Route 1: Get all services using GET: "/api/service/fetchallservice" - Login required
+// Get all services
 router.get('/fetchallservice', fetchuser, async (req, res) => {
     try {
         const services = await Service.find({ user: req.user.id });
@@ -29,21 +36,27 @@ router.get('/fetchallservice', fetchuser, async (req, res) => {
     }
 });
 
-// Route 2: Add new service using POST: "/api/service/addservice" - Login required
+// Add a new service
 router.post('/addservice', fetchuser, upload.single('image'), [
     body('title', 'Enter a valid title').isLength({ min: 3 }),
 ], async (req, res) => {
     try {
-        const { title } = req.body;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
 
+        const { title } = req.body;
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+        if (!imageUrl) {
+            return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
+        }
+
         const service = new Service({
-            title, 
-            user: req.user.id,
-            image: req.file ? req.file.path : null
+            title,
+            imageUrl,
+            user: req.user.id
         });
 
         const savedService = await service.save();
@@ -54,16 +67,16 @@ router.post('/addservice', fetchuser, upload.single('image'), [
     }
 });
 
-// Route 3: Update service using PUT: "/api/service/updateservice/:id" - Login required
+// Update a service
 router.put('/updateservice/:id', fetchuser, upload.single('image'), async (req, res) => {
     const { title } = req.body;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    
     try {
-        // Create a new service object
         const newService = {};
-        if (title) { newService.title = title; }
-        if (req.file) { newService.image = req.file.path; }
+        if (title) newService.title = title;
+        if (imageUrl) newService.imageUrl = imageUrl;
 
-        // Find the service to be updated and update it
         let service = await Service.findById(req.params.id);
         if (!service) {
             return res.status(404).send("Not Found");
@@ -74,23 +87,21 @@ router.put('/updateservice/:id', fetchuser, upload.single('image'), async (req, 
         }
 
         service = await Service.findByIdAndUpdate(req.params.id, { $set: newService }, { new: true });
-        res.json({ service });
+        res.json(service);
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Internal Server Error");
     }
 });
 
-// Route 4: Delete service using DELETE: "/api/service/deleteservice/:id" - Login required
+// Delete a service
 router.delete('/deleteservice/:id', fetchuser, async (req, res) => {
     try {
-        // Find the service to be deleted and delete it
         let service = await Service.findById(req.params.id);
         if (!service) {
             return res.status(404).send("Not Found");
         }
 
-        // Allow deletion only if user owns this service
         if (service.user.toString() !== req.user.id) {
             return res.status(401).send("Not Allowed");
         }
