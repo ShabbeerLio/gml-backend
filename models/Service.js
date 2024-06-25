@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
 
-const ServiceSchema = new Schema({
+const ServiceSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'user'
     },
     title: {
+        type: String,
+        required: true
+    },
+    imageUrl: {
         type: String,
         required: true
     },
@@ -16,4 +19,4 @@ const ServiceSchema = new Schema({
     },
 });
 
-module.exports = mongoose.model('service', ServiceSchema)
+module.exports = mongoose.model('Service', ServiceSchema);

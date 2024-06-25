@@ -1,92 +1,106 @@
 const express = require('express');
-const router = express.Router()
-const Note = require('../models/Service')
-var fetchuser = require('../middleware/fetchuser');
+const router = express.Router();
+const Service = require('../models/Service');
+const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
+const path = require('path');
 
-// route1 : get all service using GET: "/api/service/fetchallservice" login required
+// Set up multer for image upload
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // Appends the original file extension
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Route 1: Get all services using GET: "/api/service/fetchallservice" - Login required
 router.get('/fetchallservice', fetchuser, async (req, res) => {
     try {
-        const service = await Note.find({ user: req.user.id });
-        res.json(service)
+        const services = await Service.find({ user: req.user.id });
+        res.json(services);
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
-})
+});
 
-// route2 : Add New service using POST: "/api/service/addservice" login required
-router.post('/addservice', fetchuser, [
+// Route 2: Add new service using POST: "/api/service/addservice" - Login required
+router.post('/addservice', fetchuser, upload.single('image'), [
     body('title', 'Enter a valid title').isLength({ min: 3 }),
 ], async (req, res) => {
     try {
-
-        const { title} = req.body;
+        const { title } = req.body;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const note = new Note({
-            title, user: req.user.id
-        })
-        const saveNote = await note.save()
+        const service = new Service({
+            title, 
+            user: req.user.id,
+            image: req.file ? req.file.path : null
+        });
 
-        res.json(saveNote)
+        const savedService = await service.save();
+        res.json(savedService);
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
-})
+});
 
-// route3 : Update service using PUT: "/api/service/updateservice/:id" login required
-
-router.put('/updateservice/:id', fetchuser, async (req, res) => {
+// Route 3: Update service using PUT: "/api/service/updateservice/:id" - Login required
+router.put('/updateservice/:id', fetchuser, upload.single('image'), async (req, res) => {
     const { title } = req.body;
     try {
-        // Create a newservice object
-        const newservice = {};
-        if (title) { newservice.title = title };
+        // Create a new service object
+        const newService = {};
+        if (title) { newService.title = title; }
+        if (req.file) { newService.image = req.file.path; }
 
-        // find the note to be updated and update it
-        let note = await Note.findById(req.params.id);
-        if (!note) {
-            return res.status(404).send("Not Found")
-        }
-        if (note.user.toString() !== req.user.id) {
-            return res.status(404).send("Not Allowed");
+        // Find the service to be updated and update it
+        let service = await Service.findById(req.params.id);
+        if (!service) {
+            return res.status(404).send("Not Found");
         }
 
-        note = await Note.findByIdAndUpdate(req.params.id, { $set: newservice }, { new: true })
-        res.json({ note });
+        if (service.user.toString() !== req.user.id) {
+            return res.status(401).send("Not Allowed");
+        }
+
+        service = await Service.findByIdAndUpdate(req.params.id, { $set: newService }, { new: true });
+        res.json({ service });
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
+});
 
-})
-
-// route4 : Update service using Detele: "/api/service/deleteservice/:id" login required
+// Route 4: Delete service using DELETE: "/api/service/deleteservice/:id" - Login required
 router.delete('/deleteservice/:id', fetchuser, async (req, res) => {
     try {
-        // find the note to be deleted and delete it
-        let note = await Note.findById(req.params.id);
-        if (!note) {
-            return res.status(404).send("Not Found")
+        // Find the service to be deleted and delete it
+        let service = await Service.findById(req.params.id);
+        if (!service) {
+            return res.status(404).send("Not Found");
         }
 
-        // allows deletion  only if user owns this note
-        if (note.user.toString() !== req.user.id) {
-            return res.status(404).send("Not Allowed");
+        // Allow deletion only if user owns this service
+        if (service.user.toString() !== req.user.id) {
+            return res.status(401).send("Not Allowed");
         }
 
-        note = await Note.findByIdAndDelete(req.params.id)
-        res.json({ "Succes": "Note has been deleted", note: note });
+        service = await Service.findByIdAndDelete(req.params.id);
+        res.json({ "Success": "Service has been deleted", service: service });
     } catch (error) {
         console.error(error.message);
-        res.status(500).send("Internal server Error");
+        res.status(500).send("Internal Server Error");
     }
+});
 
-})
-
-module.exports = router
+module.exports = router;
