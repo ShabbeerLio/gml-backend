@@ -7,7 +7,11 @@ const SubcategorySchema = new mongoose.Schema({
     },
     description: {
         type: String
-    }
+    },
+    imageUrl: {
+        type: String,
+        required: true
+    },
 });
 
 const BlogsSchema = new mongoose.Schema({
@@ -16,6 +20,10 @@ const BlogsSchema = new mongoose.Schema({
         ref: 'User'
     },
     category: {
+        type: String,
+        required: true
+    },
+    categoryImageUrl: {
         type: String,
         required: true
     },

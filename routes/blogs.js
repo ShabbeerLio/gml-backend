@@ -1,165 +1,169 @@
 const express = require('express');
 const router = express.Router();
-const Client = require('../models/Blogs');
-var fetchuser = require('../middleware/fetchuser');
+const Blog = require('../models/Blogs');
+const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-// route1 : Get all clients using GET: "/api/blog/fetchallblog" login required
+// Ensure the uploads directory exists
+const uploadDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
+
+
+// Route 1: Get all blogs for a user
 router.get('/fetchallblog', fetchuser, async (req, res) => {
     try {
-        const clients = await Client.find({ user: req.user.id });
-        res.json(clients);
+        const blogs = await Blog.find({ user: req.user.id });
+        res.json(blogs);
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Internal Server Error");
     }
 });
 
-// route2 : Add new client using POST: "/api/blog/addblog" login required
-router.post('/addblog', fetchuser, [
-    body('category', 'Enter a valid category').isLength({ min: 3 }),
-], async (req, res) => {
+
+// Route 2: post blogs 
+router.post('/addblog', upload.single('image'), async (req, res) => {
     try {
         const { category, subcategories } = req.body;
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
+        const newSubcategories = JSON.parse(subcategories).map(sub => ({
+            ...sub,
+            imageUrl: req.file ? `/uploads/${req.file.filename}` : '',
+        }));
 
-        const client = new Client({
-            category,
-            subcategories,
-            user: req.user.id
-        });
-        const saveClient = await client.save();
-
-        res.json(saveClient);
+        const newBlog = new Blog({ category, subcategories: newSubcategories });
+        await newBlog.save();
+        res.status(201).json(newBlog);
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send("Internal Server Error");
+        res.status(400).json({ error: error.message });
     }
 });
 
-// route3 : Update client using PUT: "/api/blog/updateblog/:id" login required
-router.put('/updateblog/:id', fetchuser, async (req, res) => {
-    const { category, subcategories } = req.body;
+router.put('/updateblog/:id', upload.single('image'), async (req, res) => {
     try {
-        // Create a newClient object
-        const newClient = {};
-        if (category) { newClient.category = category; }
-        if (subcategories) { newClient.subcategories = subcategories; }
+        const { category, subcategories } = req.body;
+        const updatedSubcategories = JSON.parse(subcategories).map(sub => ({
+            ...sub,
+            imageUrl: req.file ? `/uploads/${req.file.filename}` : sub.imageUrl,
+        }));
 
-        // Find the client to be updated and update it
-        let client = await Client.findById(req.params.id);
-        if (!client) {
-            return res.status(404).send("Not Found");
-        }
-        if (client.user.toString() !== req.user.id) {
-            return res.status(404).send("Not Allowed");
-        }
-
-        client = await Client.findByIdAndUpdate(req.params.id, { $set: newClient }, { new: true });
-        res.json({ client });
+        const updatedBlog = await Blog.findByIdAndUpdate(
+            req.params.id,
+            { category, subcategories: updatedSubcategories },
+            { new: true }
+        );
+        res.json(updatedBlog);
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send("Internal Server Error");
+        res.status(400).json({ error: error.message });
     }
 });
 
-// route4 : Delete client using DELETE: "/api/blog/deleteblog/:id" login required
+// Route 4: Delete a blog
 router.delete('/deleteblog/:id', fetchuser, async (req, res) => {
     try {
-        // Find the client to be deleted and delete it
-        let client = await Client.findById(req.params.id);
-        if (!client) {
+        let blog = await Blog.findById(req.params.id);
+        if (!blog) {
             return res.status(404).send("Not Found");
         }
-
-        // Allow deletion only if user owns this client
-        if (client.user.toString() !== req.user.id) {
-            return res.status(404).send("Not Allowed");
+        if (blog.user.toString() !== req.user.id) {
+            return res.status(403).send("Not Allowed");
         }
 
-        client = await Client.findByIdAndDelete(req.params.id);
-        res.json({ "Success": "Blog has been deleted", client: client });
+        blog = await Blog.findByIdAndDelete(req.params.id);
+        res.json({ Success: "Blog has been deleted", blog });
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Internal Server Error");
     }
 });
 
-// Add Subcategory ROUTE: /api/blog/:id/subcategories
-
-router.post('/:clientId/subcategories', async (req, res) => {
+// Route 5: Add subcategory to a blog
+router.post('/:blogId/subcategories', upload.single('image'), async (req, res) => {
     try {
-        const client = await Client.findById(req.params.clientId);
-        if (!client) {
+        const blog = await Blog.findById(req.params.blogId);
+        if (!blog) {
             return res.status(404).json({ error: "Blog not found" });
         }
 
         const { name, description } = req.body;
-        client.subcategories.push({ name, description });
-        await client.save();
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-        res.status(201).json({ message: "Blog detail added successfully" });
+        if (!imageUrl) {
+            return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
+        }
+
+        blog.subcategories.push({ name, description, imageUrl });
+        await blog.save();
+
+        res.status(201).json({ message: "Subcategory added successfully" });
     } catch (error) {
-        console.error("Error adding Blog detail:", error);
+        console.error("Error adding subcategory:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-
-// Edit Subcategory ROUTE: /api/blog/:clientId/subcategories/:subcategoryId
-router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
+// Route 6: Update subcategory in a blog
+router.put('/:blogId/subcategories/:subcategoryId', upload.single('image'), async (req, res) => {
     try {
-        const client = await Client.findById(req.params.clientId);
-        if (!client) {
+        const blog = await Blog.findById(req.params.blogId);
+        if (!blog) {
             return res.status(404).json({ error: "Blog not found" });
         }
 
         const { name, description } = req.body;
-        const subcategory = client.subcategories.find(sub => sub._id.toString() === req.params.subcategoryId);
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+        const subcategory = blog.subcategories.find(sub => sub._id.toString() === req.params.subcategoryId);
         if (subcategory) {
-            subcategory.name = name;
-            subcategory.description = description;
-            await client.save();
-            res.json({ message: "Blog detail updated successfully" });
+            subcategory.name = name || subcategory.name;
+            subcategory.description = description || subcategory.description;
+            subcategory.imageUrl = imageUrl || subcategory.imageUrl;
+            await blog.save();
+            res.json({ message: "Subcategory updated successfully" });
         } else {
-            res.status(404).json({ error: "Blog detail not found" });
+            res.status(404).json({ error: "Subcategory not found" });
         }
     } catch (error) {
-        console.error("Error updating Blog detail:", error);
+        console.error("Error updating subcategory:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-
-
-// Delete Subcategory ROUTE:/api/blog/:id/subcategories
-router.delete('/:clientId/subcategories/:subcategoryId', async (req, res) => {
+// Route 7: Delete subcategory in a blog
+router.delete('/:blogId/subcategories/:subcategoryId', async (req, res) => {
     try {
-        const client = await Client.findById(req.params.clientId);
-        // console.log(client, "client");
-        if (!client) {
+        const blog = await Blog.findById(req.params.blogId);
+        if (!blog) {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        const subcategoryIndex = client.subcategories.findIndex(sub => sub._id.toString() === req.params.subcategoryId);
-        // console.log(subcategoryIndex, "subcategory index");
+        const subcategoryIndex = blog.subcategories.findIndex(sub => sub._id.toString() === req.params.subcategoryId);
         if (subcategoryIndex !== -1) {
-            client.subcategories.splice(subcategoryIndex, 1);
-            await client.save();
-            res.json({ Success: "Blog detail deleted successfully" });
+            blog.subcategories.splice(subcategoryIndex, 1);
+            await blog.save();
+            res.json({ Success: "Subcategory deleted successfully" });
         } else {
-            res.status(404).json({ error: "Blog detail not found" });
+            res.status(404).json({ error: "Subcategory not found" });
         }
     } catch (error) {
-        console.error("Error deleting Blog detail:", error);
+        console.error("Error deleting subcategory:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
-
-
-
 
 module.exports = router;
