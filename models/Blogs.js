@@ -7,11 +7,7 @@ const SubcategorySchema = new mongoose.Schema({
     },
     description: {
         type: String
-    },
-    imageUrl: {
-        type: String,
-        required: true
-    },
+    }
 });
 
 const BlogsSchema = new mongoose.Schema({
@@ -23,10 +19,6 @@ const BlogsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    categoryImageUrl: {
-        type: String,
-        required: true
-    },
     subcategories: [SubcategorySchema],
     date: {
         type: Date,
@@ -34,4 +26,4 @@ const BlogsSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Blogs',BlogsSchema)
+module.exports = mongoose.model('Blogs', BlogsSchema);
