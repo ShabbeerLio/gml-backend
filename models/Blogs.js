@@ -19,6 +19,14 @@ const BlogsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    categorydesc: {
+        type: String,
+        // required: true
+    },
+    tag: {
+        type: String,
+        // required: true
+    },
     subcategories: [SubcategorySchema],
     date: {
         type: Date,

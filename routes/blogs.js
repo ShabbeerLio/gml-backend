@@ -18,9 +18,10 @@ router.get('/fetchallblog', fetchuser, async (req, res) => {
 // route2 : Add new client using POST: "/api/blog/addblog" login required
 router.post('/addblog', fetchuser, [
     body('category', 'Enter a valid category').isLength({ min: 3 }),
+    body('categorydesc', 'Enter a valid description').isLength({ min: 5 }),
 ], async (req, res) => {
     try {
-        const { category, subcategories } = req.body;
+        const { category, categorydesc, tag, subcategories } = req.body;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
@@ -28,6 +29,8 @@ router.post('/addblog', fetchuser, [
 
         const client = new Client({
             category,
+            categorydesc,
+            tag,
             subcategories,
             user: req.user.id
         });
@@ -42,12 +45,14 @@ router.post('/addblog', fetchuser, [
 
 // route3 : Update client using PUT: "/api/blog/updateblog/:id" login required
 router.put('/updateblog/:id', fetchuser, async (req, res) => {
-    const { category, subcategories } = req.body;
+    const { category, categorydesc, tag, subcategories } = req.body;
     try {
         // Create a newClient object
-        const newClient = {};
-        if (category) { newClient.category = category; }
-        if (subcategories) { newClient.subcategories = subcategories; }
+        const newBlog = {};
+        if (category) { newBlog.category = category; }
+        if (categorydesc) { newBlog.categorydesc = categorydesc };
+        if (tag) { newBlog.tag = tag };
+        if (subcategories) { newBlog.subcategories = subcategories; }
 
         // Find the client to be updated and update it
         let client = await Client.findById(req.params.id);
@@ -58,7 +63,7 @@ router.put('/updateblog/:id', fetchuser, async (req, res) => {
             return res.status(404).send("Not Allowed");
         }
 
-        client = await Client.findByIdAndUpdate(req.params.id, { $set: newClient }, { new: true });
+        client = await Client.findByIdAndUpdate(req.params.id, { $set: newBlog }, { new: true });
         res.json({ client });
     } catch (error) {
         console.error(error.message);
