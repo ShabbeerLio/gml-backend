@@ -25,7 +25,11 @@ const BlogsSchema = new mongoose.Schema({
     },
     tag: {
         type: String,
-        // required: true
+        required: true
+    },
+    catimageUrl: {
+        type: String,
+        required: true
     },
     subcategories: [SubcategorySchema],
     date: {

@@ -3,6 +3,27 @@ const router = express.Router();
 const Client = require('../models/Blogs');
 var fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure the uploads directory exists
+
+const uploadDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // route1 : Get all clients using GET: "/api/blog/fetchallblog" login required
 router.get('/fetchallblog', fetchuser, async (req, res) => {
@@ -16,27 +37,34 @@ router.get('/fetchallblog', fetchuser, async (req, res) => {
 });
 
 // route2 : Add new client using POST: "/api/blog/addblog" login required
-router.post('/addblog', fetchuser, [
+router.post('/addblog', fetchuser, upload.single('image'), [
     body('category', 'Enter a valid category').isLength({ min: 3 }),
     body('categorydesc', 'Enter a valid description').isLength({ min: 5 }),
 ], async (req, res) => {
     try {
         const { category, categorydesc, tag, subcategories } = req.body;
+        const catimageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+        if (!catimageUrl) {
+            return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
+        }
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const client = new Client({
+        const blog = new Client({
             category,
             categorydesc,
             tag,
+            catimageUrl,
             subcategories,
             user: req.user.id
         });
-        const saveClient = await client.save();
+        const savedBlog = await blog.save();
 
-        res.json(saveClient);
+        res.json(savedBlog);
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Internal Server Error");
@@ -44,34 +72,37 @@ router.post('/addblog', fetchuser, [
 });
 
 // route3 : Update client using PUT: "/api/blog/updateblog/:id" login required
-router.put('/updateblog/:id', fetchuser, async (req, res) => {
+router.put('/updateblog/:id', fetchuser, upload.single('image'), async (req, res) => {
     const { category, categorydesc, tag, subcategories } = req.body;
+    const catimageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
     try {
         // Create a newClient object
         const newBlog = {};
         if (category) { newBlog.category = category; }
         if (categorydesc) { newBlog.categorydesc = categorydesc };
         if (tag) { newBlog.tag = tag };
+        if (catimageUrl) newService.catimageUrl = catimageUrl;
         if (subcategories) { newBlog.subcategories = subcategories; }
 
-        // Find the client to be updated and update it
-        let client = await Client.findById(req.params.id);
-        if (!client) {
+        // Find the blog to be updated and update it
+        let blog = await Client.findById(req.params.id);
+        if (!blog) {
             return res.status(404).send("Not Found");
         }
-        if (client.user.toString() !== req.user.id) {
+        if (blog.user.toString() !== req.user.id) {
             return res.status(404).send("Not Allowed");
         }
 
-        client = await Client.findByIdAndUpdate(req.params.id, { $set: newBlog }, { new: true });
-        res.json({ client });
+        blog = await Client.findByIdAndUpdate(req.params.id, { $set: newBlog }, { new: true });
+        res.json(blog);
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Internal Server Error");
     }
 });
 
-// route4 : Delete client using DELETE: "/api/blog/deleteblog/:id" login required
+// route4 : Delete blog using DELETE: "/api/blog/deleteblog/:id" login required
 router.delete('/deleteblog/:id', fetchuser, async (req, res) => {
     try {
         // Find the client to be deleted and delete it
