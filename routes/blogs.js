@@ -77,12 +77,12 @@ router.put('/updateblog/:id', fetchuser, upload.single('image'), async (req, res
     const catimageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     try {
-        // Create a newClient object
+        // Create a newClient object 
         const newBlog = {};
         if (category) { newBlog.category = category; }
         if (categorydesc) { newBlog.categorydesc = categorydesc };
         if (tag) { newBlog.tag = tag };
-        if (catimageUrl) newService.catimageUrl = catimageUrl;
+        if (catimageUrl) newBlog.catimageUrl = catimageUrl;
         if (subcategories) { newBlog.subcategories = subcategories; }
 
         // Find the blog to be updated and update it
@@ -126,7 +126,7 @@ router.delete('/deleteblog/:id', fetchuser, async (req, res) => {
 
 // Add Subcategory ROUTE: /api/blog/:id/subcategories
 
-router.post('/:clientId/subcategories', async (req, res) => {
+router.post('/:clientId/subcategories', upload.single('image'), async (req, res) => {
     try {
         const client = await Client.findById(req.params.clientId);
         if (!client) {
@@ -134,19 +134,25 @@ router.post('/:clientId/subcategories', async (req, res) => {
         }
 
         const { name, description } = req.body;
-        client.subcategories.push({ name, description });
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+        if (!imageUrl) {
+            return res.status(400).json({ errors: [{ msg: 'Subcategory image URL is required' }] });
+        }
+
+        client.subcategories.push({ name, description, imageUrl });
         await client.save();
 
-        res.status(201).json({ message: "Blog detail added successfully" });
+        res.status(201).json({ message: "Subcategory added successfully" });
     } catch (error) {
-        console.error("Error adding Blog detail:", error);
+        console.error("Error adding subcategory:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
 
 // Edit Subcategory ROUTE: /api/blog/:clientId/subcategories/:subcategoryId
-router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
+router.put('/:clientId/subcategories/:subcategoryId', upload.single('image'), async (req, res) => {
     try {
         const client = await Client.findById(req.params.clientId);
         if (!client) {
@@ -156,8 +162,13 @@ router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
         const { name, description } = req.body;
         const subcategory = client.subcategories.find(sub => sub._id.toString() === req.params.subcategoryId);
         if (subcategory) {
-            subcategory.name = name;
-            subcategory.description = description;
+            subcategory.name = name || subcategory.name;
+            subcategory.description = description || subcategory.description;
+            
+            if (req.file) {
+                subcategory.imageUrl = `/uploads/${req.file.filename}`;
+            }
+
             await client.save();
             res.json({ message: "Blog detail updated successfully" });
         } else {
@@ -168,6 +179,7 @@ router.put('/:clientId/subcategories/:subcategoryId', async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 
 

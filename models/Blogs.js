@@ -7,6 +7,9 @@ const SubcategorySchema = new mongoose.Schema({
     },
     description: {
         type: String
+    },
+    imageUrl: {
+        type: String
     }
 });
 
