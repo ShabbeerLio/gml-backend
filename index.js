@@ -8,6 +8,7 @@ const fs = require('fs');
 connectToMongo();
 
 const app = express();
+const PORT = process.env.PORT || 8000;
 
 // Middleware
 app.use(cors());
@@ -22,22 +23,27 @@ app.use('/uploads', express.static(uploadDir));
 
 // Log each request to /uploads
 app.use('/uploads', (req, res, next) => {
-    // console.log(`Request for file: ${req.url}`);
+    console.log(`Request for file: ${req.url}`);
     next();
 });
 
-// Routes
-app.get('/', (req, res) => res.json({message: "hello from Gmls api"}));
+// Available routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/service', require('./routes/service'));
 app.use('/api/clients', require('./routes/clients'));
 app.use('/api/blog', require('./routes/blogs'));
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
+// Default route
+app.get('/', (req, res) => {
+    res.json({ message: "Hello from Gmls API" });
 });
 
-// Export the app for Vercel to handle
+// Start server (for local development)
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Gmls backend listening on port ${PORT}`);
+    });
+}
+
+// Export the app for Vercel
 module.exports = app;
