@@ -40,6 +40,18 @@ app.use('/api/blog', require('./routes/blogs'));
 app.get('/', (req, res) => {
     res.json({ message: "Hello from Gmls API" });
 });
+app.get('/api/auth', (req, res) => {
+    res.json({ message: "auth from Gmls API" });
+});
+app.get('/api/service', (req, res) => {
+    res.json({ message: "service from Gmls API" });
+});
+app.get('/api/clients', (req, res) => {
+    res.json({ message: "clients from Gmls API" });
+});
+app.get('/api/blog', (req, res) => {
+    res.json({ message: "blog from Gmls API" });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
