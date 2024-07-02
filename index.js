@@ -4,14 +4,15 @@ const connectToMongo = require('./db');
 const path = require('path');
 const fs = require('fs');
 
+// Connect to MongoDB
+connectToMongo();
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// Connect to MongoDB
-connectToMongo().catch(err => {
-    console.error('Failed to connect to MongoDB:', err);
-    process.exit(1);
-});
+app.get('/', (req, res) =>
+    res.json({message:"hello frorm Gmls api"})
+  );
 
 // Middleware
 app.use(cors());
@@ -26,33 +27,16 @@ app.use('/uploads', express.static(uploadDir));
 
 // Log each request to /uploads
 app.use('/uploads', (req, res, next) => {
-    console.log(`Request for file: ${req.url}`);
+    // console.log(`Request for file: ${req.url}`);
     next();
 });
-
 // Available routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/service', require('./routes/service'));
 app.use('/api/clients', require('./routes/clients'));
 app.use('/api/blog', require('./routes/blogs'));
 
-// Default route
-app.get('/', (req, res) => {
-    res.json({ message: "Hello from Gmls API" });
+// Start server
+app.listen(PORT, () => {
+    console.log(`Gmls backend listening on port ${PORT}`);
 });
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('An error occurred:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-});
-
-// Start server (for local development)
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`Gmls backend listening on port ${PORT}`);
-    });
-}
-
-// Export the app for Vercel
-module.exports = app;
