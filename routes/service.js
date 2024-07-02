@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure the uploads directory exists
+
 const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
@@ -67,7 +68,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
 });
 
 // Update a service
-router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (req, res) => {
+router.put('/updateservice/:id', fetchuser, upload.single('image'), async (req, res) => {
     const { title } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
     
