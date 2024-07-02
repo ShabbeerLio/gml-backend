@@ -68,7 +68,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
 });
 
 // Update a service
-router.put('/updateservice/:id', fetchuser, upload.single('image'), async (req, res) => {
+router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (req, res) => {
     const { title } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
     
