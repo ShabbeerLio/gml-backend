@@ -8,7 +8,6 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure the uploads directory exists
-
 const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
@@ -19,7 +18,7 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        cb(null, `${Date.now() + '-' + file.originalname}`);
+        cb(null, `${Date.now()}-${file.originalname}`);
     }
 });
 
@@ -37,7 +36,7 @@ router.get('/fetchallservice', fetchuser, async (req, res) => {
 });
 
 // Add a new service
-router.post('/addservice', fetchuser, upload.single('image'), [
+router.post('/addservice', fetchuser, upload.single('imageUrl'), [
     body('title', 'Enter a valid title').isLength({ min: 3 }),
 ], async (req, res) => {
     try {
@@ -68,7 +67,7 @@ router.post('/addservice', fetchuser, upload.single('image'), [
 });
 
 // Update a service
-router.put('/updateservice/:id', fetchuser, upload.single('image'), async (req, res) => {
+router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (req, res) => {
     const { title } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
     
