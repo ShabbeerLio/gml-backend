@@ -81,9 +81,14 @@ router.post('/addblog', fetchuser, upload.single('image'), [
 // route3 : Update client using PUT: "/api/blog/updateblog/:id" login required
 router.put('/updateblog/:id', fetchuser, upload.single('image'), async (req, res) => {
     const { category, categorydesc, tag, subcategories } = req.body;
-    const catimageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
+    let catimageUrl = null 
 
     try {
+        // Upload the image to Cloudinary if a file is provided
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            catimageUrl = result.secure_url;
+        }
         // Create a newClient object 
         const newBlog = {};
         if (category) { newBlog.category = category; }
@@ -173,8 +178,12 @@ router.put('/:clientId/subcategories/:subcategoryId', upload.single('image'), as
             subcategory.description = description || subcategory.description;
 
             if (req.file) {
-                subcategory.imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
+                const result = await cloudinary.uploader.upload(req.file.path);
+                subcategory.imageUrl = result.secure_url;
             }
+            // if (req.file) {
+            //     subcategory.imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
+            // }
 
             await client.save();
             res.json({ message: "Blog detail updated successfully" });

@@ -53,7 +53,12 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
         }
 
         const { title } = req.body;
-        const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
+        // Upload the image to Cloudinary if a file is provided
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            imageUrl = result.secure_url;
+        }
+        // const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
 
         if (!imageUrl) {
             return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
@@ -76,22 +81,31 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
 // Update a service
 router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (req, res) => {
     const { title } = req.body;
-    const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
+    let imageUrl = null;
 
     try {
+        // Upload the image to Cloudinary if a file is provided
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            imageUrl = result.secure_url;
+        }
+
         const newService = {};
         if (title) newService.title = title;
         if (imageUrl) newService.imageUrl = imageUrl;
 
+        // Find the service by ID
         let service = await Service.findById(req.params.id);
         if (!service) {
             return res.status(404).send("Not Found");
         }
 
+        // Check if the user is authorized to update the service
         if (service.user.toString() !== req.user.id) {
             return res.status(401).send("Not Allowed");
         }
 
+        // Update the service
         service = await Service.findByIdAndUpdate(req.params.id, { $set: newService }, { new: true });
         res.json(service);
     } catch (error) {
@@ -99,6 +113,7 @@ router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (re
         res.status(500).send("Internal Server Error");
     }
 });
+
 
 // Delete a service
 router.delete('/deleteservice/:id', fetchuser, async (req, res) => {
