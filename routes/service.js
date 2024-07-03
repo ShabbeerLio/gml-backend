@@ -6,24 +6,31 @@ const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require("../helper/cloudinaryconfig")
 
 // Ensure the uploads directory exists
 
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
-
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir);
+        cb(null, "./uploads");
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, `image-${Date.now()}.${file.originalname}`);
     }
 });
 
-const upload = multer({ storage: storage });
+const isImage = (req, file, cb) => {
+    if (file.mimetype.startsWith("image")) {
+        cb(null, true)
+    } else {
+        cb(new Error("only image is allowed"))
+    }
+}
+
+const upload = multer({
+    storage: storage,
+    fileFilter: isImage
+});
 
 // Get all services
 router.get('/fetchallservice', fetchuser, async (req, res) => {
@@ -47,7 +54,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
         }
 
         const { title } = req.body;
-        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
 
         if (!imageUrl) {
             return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
@@ -70,8 +77,8 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
 // Update a service
 router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (req, res) => {
     const { title } = req.body;
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
-    
+    const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
+
     try {
         const newService = {};
         if (title) newService.title = title;

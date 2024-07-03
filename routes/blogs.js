@@ -6,24 +6,31 @@ const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require("../helper/cloudinaryconfig")
 
 // Ensure the uploads directory exists
 
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
-
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir);
+        cb(null, "./uploads");
     },
     filename: function (req, file, cb) {
-        cb(null, `${Date.now() + '-' + file.originalname}`);
+        cb(null, `image-${Date.now()}.${file.originalname}`);
     }
 });
 
-const upload = multer({ storage: storage });
+const isImage = (req, file, cb) => {
+    if (file.mimetype.startsWith("image")) {
+        cb(null, true)
+    } else {
+        cb(new Error("only image is allowed"))
+    }
+}
+
+const upload = multer({
+    storage: storage,
+    fileFilter: isImage
+});
 
 // route1 : Get all clients using GET: "/api/blog/fetchallblog" login required
 router.get('/fetchallblog', fetchuser, async (req, res) => {
@@ -43,7 +50,7 @@ router.post('/addblog', fetchuser, upload.single('image'), [
 ], async (req, res) => {
     try {
         const { category, categorydesc, tag, subcategories } = req.body;
-        const catimageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        const catimageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
 
         if (!catimageUrl) {
             return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
@@ -74,7 +81,7 @@ router.post('/addblog', fetchuser, upload.single('image'), [
 // route3 : Update client using PUT: "/api/blog/updateblog/:id" login required
 router.put('/updateblog/:id', fetchuser, upload.single('image'), async (req, res) => {
     const { category, categorydesc, tag, subcategories } = req.body;
-    const catimageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    const catimageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
 
     try {
         // Create a newClient object 
@@ -134,7 +141,7 @@ router.post('/:clientId/subcategories', upload.single('image'), async (req, res)
         }
 
         const { name, description } = req.body;
-        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
 
         if (!imageUrl) {
             return res.status(400).json({ errors: [{ msg: 'Subcategory image URL is required' }] });
@@ -164,9 +171,9 @@ router.put('/:clientId/subcategories/:subcategoryId', upload.single('image'), as
         if (subcategory) {
             subcategory.name = name || subcategory.name;
             subcategory.description = description || subcategory.description;
-            
+
             if (req.file) {
-                subcategory.imageUrl = `/uploads/${req.file.filename}`;
+                subcategory.imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
             }
 
             await client.save();
