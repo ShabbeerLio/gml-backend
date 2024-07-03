@@ -53,12 +53,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
         }
 
         const { title } = req.body;
-        // Upload the image to Cloudinary if a file is provided
-        if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path);
-            imageUrl = result.secure_url;
-        }
-        // const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
+        const imageUrl = ((await cloudinary.uploader.upload(req.file.path)).secure_url);
 
         if (!imageUrl) {
             return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
