@@ -13,8 +13,6 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
-// Static files route
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Available routes
 app.use('/api/auth', require('./routes/auth'));

@@ -5,7 +5,6 @@ const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const cloudinary = require("../helper/cloudinaryconfig")
 
 // Ensure the uploads directory exists
