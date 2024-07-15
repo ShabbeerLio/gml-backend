@@ -4,37 +4,19 @@ const Service = require('../models/Service');
 const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
 const cloudinary = require("../helper/cloudinaryconfig");
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// Ensure the uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
-}
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsDir);
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'uploads',
+        format: async (req, file) => 'png', // supports promises as well
+        public_id: (req, file) => `image-${Date.now()}`,
     },
-    filename: function (req, file, cb) {
-        cb(null, `image-${Date.now()}${path.extname(file.originalname)}`);
-    }
 });
 
-const isImage = (req, file, cb) => {
-    if (file.mimetype.startsWith("image")) {
-        cb(null, true);
-    } else {
-        cb(new Error("Only image files are allowed"));
-    }
-};
-
-const upload = multer({
-    storage: storage,
-    fileFilter: isImage
-});
+const upload = multer({ storage: storage });
 
 // Get all services
 router.get('/fetchallservice', fetchuser, async (req, res) => {
@@ -58,7 +40,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
         }
 
         const { title } = req.body;
-        const imageUrl = (await cloudinary.uploader.upload(req.file.path)).secure_url;
+        const imageUrl = req.file.path;  // Cloudinary already provides the URL
 
         if (!imageUrl) {
             return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
@@ -84,10 +66,9 @@ router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (re
     let imageUrl = null;
 
     try {
-        // Upload the image to Cloudinary if a file is provided
+        // Cloudinary automatically uploads the file if provided
         if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path);
-            imageUrl = result.secure_url;
+            imageUrl = req.file.path;  // Cloudinary already provides the URL
         }
 
         const newService = {};
