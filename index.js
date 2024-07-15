@@ -13,9 +13,6 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the /public directory
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Available routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/service', require('./routes/service'));
