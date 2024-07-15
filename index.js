@@ -20,6 +20,9 @@ app.use('/api/service', require('./routes/service'));
 app.use('/api/clients', require('./routes/clients'));
 app.use('/api/blog', require('./routes/blogs'));
 app.use('/api/meta', require('./routes/meta'));
+app.get('/', (req, res) => {
+    res.send('Hello MERN Stack!');
+});
 
 // Start server
 app.listen(PORT, () => {
