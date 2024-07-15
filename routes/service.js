@@ -5,17 +5,9 @@ const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
 const cloudinary = require("../helper/cloudinaryconfig");
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const streamifier = require('streamifier');
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'uploads',
-        format: async (req, file) => 'png', // supports promises as well
-        public_id: (req, file) => `image-${Date.now()}`,
-    },
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Get all services
@@ -40,11 +32,27 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
         }
 
         const { title } = req.body;
-        const imageUrl = req.file.path;  // Cloudinary already provides the URL
 
-        if (!imageUrl) {
-            return res.status(400).json({ errors: [{ msg: 'Image URL is required' }] });
+        // Ensure file is provided
+        if (!req.file) {
+            return res.status(400).json({ errors: [{ msg: 'Image file is required' }] });
         }
+
+        const streamUpload = (req) => {
+            return new Promise((resolve, reject) => {
+                let stream = cloudinary.uploader.upload_stream((error, result) => {
+                    if (result) {
+                        resolve(result);
+                    } else {
+                        reject(error);
+                    }
+                });
+                streamifier.createReadStream(req.file.buffer).pipe(stream);
+            });
+        };
+
+        const result = await streamUpload(req);
+        const imageUrl = result.secure_url;
 
         const service = new Service({
             title,
@@ -66,9 +74,23 @@ router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (re
     let imageUrl = null;
 
     try {
-        // Cloudinary automatically uploads the file if provided
+        // Ensure file is provided if updating the image
         if (req.file) {
-            imageUrl = req.file.path;  // Cloudinary already provides the URL
+            const streamUpload = (req) => {
+                return new Promise((resolve, reject) => {
+                    let stream = cloudinary.uploader.upload_stream((error, result) => {
+                        if (result) {
+                            resolve(result);
+                        } else {
+                            reject(error);
+                        }
+                    });
+                    streamifier.createReadStream(req.file.buffer).pipe(stream);
+                });
+            };
+
+            const result = await streamUpload(req);
+            imageUrl = result.secure_url;
         }
 
         const newService = {};
