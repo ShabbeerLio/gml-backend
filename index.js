@@ -21,7 +21,7 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/blog', require('./routes/blogs'));
 app.use('/api/meta', require('./routes/meta'));
 app.get('/', (req, res) => {
-    res.send('Hello MERN Stack!');
+    res.json({message:'Hello MERN Stack!'});
 });
 
 // Start server
