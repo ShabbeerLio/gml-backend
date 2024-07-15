@@ -3,9 +3,9 @@ const router = express.Router();
 const Service = require('../models/Service');
 const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
-const multer = require('multer');
 const cloudinary = require("../helper/cloudinaryconfig");
 const streamifier = require('streamifier');
+const multer = require('multer');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -51,6 +51,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
             return res.status(400).json({ errors: [{ msg: 'Image file is required' }] });
         }
 
+        // Upload to Cloudinary
         const result = await streamUpload(req.file.buffer);
         const imageUrl = result.secure_url;
 
