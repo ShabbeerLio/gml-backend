@@ -10,6 +10,19 @@ const streamifier = require('streamifier');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+const streamUpload = (buffer) => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream((error, result) => {
+            if (result) {
+                resolve(result);
+            } else {
+                reject(error);
+            }
+        });
+        streamifier.createReadStream(buffer).pipe(stream);
+    });
+};
+
 // Get all services
 router.get('/fetchallservice', fetchuser, async (req, res) => {
     try {
@@ -38,20 +51,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
             return res.status(400).json({ errors: [{ msg: 'Image file is required' }] });
         }
 
-        const streamUpload = (req) => {
-            return new Promise((resolve, reject) => {
-                let stream = cloudinary.uploader.upload_stream((error, result) => {
-                    if (result) {
-                        resolve(result);
-                    } else {
-                        reject(error);
-                    }
-                });
-                streamifier.createReadStream(req.file.buffer).pipe(stream);
-            });
-        };
-
-        const result = await streamUpload(req);
+        const result = await streamUpload(req.file.buffer);
         const imageUrl = result.secure_url;
 
         const service = new Service({
@@ -76,20 +76,7 @@ router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (re
     try {
         // Ensure file is provided if updating the image
         if (req.file) {
-            const streamUpload = (req) => {
-                return new Promise((resolve, reject) => {
-                    let stream = cloudinary.uploader.upload_stream((error, result) => {
-                        if (result) {
-                            resolve(result);
-                        } else {
-                            reject(error);
-                        }
-                    });
-                    streamifier.createReadStream(req.file.buffer).pipe(stream);
-                });
-            };
-
-            const result = await streamUpload(req);
+            const result = await streamUpload(req.file.buffer);
             imageUrl = result.secure_url;
         }
 
