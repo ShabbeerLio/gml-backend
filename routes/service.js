@@ -4,14 +4,13 @@ const Service = require('../models/Service');
 const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
-const path = require('path');
 const cloudinary = require("../helper/cloudinaryconfig")
 
 // Ensure the uploads directory exists
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, "./uploads");
+        cb(null, __dirname);
     },
     filename: function (req, file, cb) {
         cb(null, `image-${Date.now()}.${file.originalname}`);
