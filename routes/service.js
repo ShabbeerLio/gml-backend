@@ -3,13 +3,15 @@ const router = express.Router();
 const Service = require('../models/Service');
 const fetchuser = require('../middleware/fetchuser');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
 const cloudinary = require("../helper/cloudinaryconfig");
 const streamifier = require('streamifier');
-const multer = require('multer');
 
+// Configure multer to use memory storage
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// Stream upload to Cloudinary
 const streamUpload = (buffer) => {
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream((error, result) => {
@@ -64,7 +66,7 @@ router.post('/addservice', fetchuser, upload.single('imageUrl'), [
         const savedService = await service.save();
         res.json(savedService);
     } catch (error) {
-        console.error(error.message);
+        console.error('Error details:', error);
         res.status(500).send("Internal Server Error");
     }
 });
@@ -100,7 +102,7 @@ router.put('/updateservice/:id', fetchuser, upload.single('imageUrl'), async (re
         service = await Service.findByIdAndUpdate(req.params.id, { $set: newService }, { new: true });
         res.json(service);
     } catch (error) {
-        console.error(error.message);
+        console.error('Error details:', error);
         res.status(500).send("Internal Server Error");
     }
 });
@@ -120,7 +122,7 @@ router.delete('/deleteservice/:id', fetchuser, async (req, res) => {
         service = await Service.findByIdAndDelete(req.params.id);
         res.json({ "Success": "Service has been deleted", service: service });
     } catch (error) {
-        console.error(error.message);
+        console.error('Error details:', error);
         res.status(500).send("Internal Server Error");
     }
 });

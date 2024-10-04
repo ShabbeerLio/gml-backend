@@ -30,14 +30,26 @@ const BlogsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    status: {
+        type: Boolean,
+        default: true
+    },
+    draft: {
+        type: Boolean,
+        default: false
+    },
     catimageUrl: {
         type: String,
-        required: true
+        // required: true
     },
     subcategories: [SubcategorySchema],
     date: {
         type: Date,
         default: Date.now
+    },
+    publishDate: {
+        type: Date,
+        required: false
     }
 });
 
