@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const moment = require('moment-timezone');
 
 const ServiceSchema = new mongoose.Schema({
     user: {
@@ -15,7 +16,7 @@ const ServiceSchema = new mongoose.Schema({
     },
     date: {
         type: Date,
-        default: Date.now
+        default: () => moment().tz("Asia/Kolkata").toDate()
     },
 });
 
