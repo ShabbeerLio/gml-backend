@@ -43,14 +43,14 @@ const BlogsSchema = new mongoose.Schema({
         type: String,
         // required: true
     },
+    publishDate: {
+        type: Date,
+        required: false
+    },
     subcategories: [SubcategorySchema],
     date: {
         type: Date,
         default: () => moment().tz("Asia/Kolkata").toDate()
-    },
-    publishDate: {
-        type: Date,
-        required: false
     }
 });
 
