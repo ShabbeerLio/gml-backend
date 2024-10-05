@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const moment = require('moment-timezone');
 
 const SubcategorySchema = new mongoose.Schema({
     name: {
@@ -23,7 +22,7 @@ const ClientSchema = new mongoose.Schema({
     subcategories: [SubcategorySchema],
     date: {
         type: Date,
-        default: () => moment().tz("Asia/Kolkata").toDate()
+        default: Date.now
     },
 });
 
