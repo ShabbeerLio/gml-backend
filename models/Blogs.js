@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
+const moment = require('moment-timezone');
 
+// Subcategory schema remains unchanged
 const SubcategorySchema = new mongoose.Schema({
     name: {
         type: String,
@@ -13,6 +15,7 @@ const SubcategorySchema = new mongoose.Schema({
     }
 });
 
+// Blogs schema with IST date handling
 const BlogsSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -45,10 +48,11 @@ const BlogsSchema = new mongoose.Schema({
     subcategories: [SubcategorySchema],
     date: {
         type: Date,
-        default: Date.now
+        default: () => moment().tz("Asia/Kolkata").toDate()  // Save date in IST
     },
     publishDate: {
         type: Date,
+        default: () => moment().tz("Asia/Kolkata").toDate(),  // Set publishDate in IST if needed
         required: false
     }
 });
